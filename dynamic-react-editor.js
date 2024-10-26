@@ -219,9 +219,13 @@ const MainComponent = React.memo(
       }
     }, [state.aiPrompt, state.code]);
 
-    const saveCustomPrompt = useCallback(() => {
-      const newPrompts = [...state.customPrompts, state.aiPrompt];
-      localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
+    const updateWithAI = useCallback(async () => {
+      const trimmedPrompt = state.aiPrompt.trim();
+      if (trimmedPrompt.length < 5) {
+        updateState({ error: "Prompt must be at least 5 characters long." });
+        return;
+      }
+      updateState({ isUpdating: true, error: null });
       updateState({ customPrompts: newPrompts });
     }, [state.aiPrompt, state.customPrompts]);
 
