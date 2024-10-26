@@ -42,9 +42,9 @@ module.exports = ComplexComponent;
 `,
 };
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 5;
 const BABEL_CDN_URL =
-  "https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.1/babel.min.js";
+  process.env.BABEL_CDN_URL || "https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.1/babel.min.js";
 
 const MainComponent = React.memo(
   ({ code: initialCode, previewProps = {}, noInlineStyles = false }) => {
@@ -57,6 +57,8 @@ const MainComponent = React.memo(
       aiPrompt: "",
       isUpdating: false,
       retryCount: 0,
+      customPrompts: JSON.parse(localStorage.getItem("customPrompts")) || [],
+      history: [],
     });
 
     const refs = {
@@ -191,7 +193,11 @@ const MainComponent = React.memo(
         // Ensure response code is complete before transpiling
         try {
           new Function(aiResponse); // Validate syntax
-          updateState({ code: aiResponse.trim(), isUpdating: false });
+          updateState((prevState) => ({
+            code: aiResponse.trim(),
+            isUpdating: false,
+            history: [...prevState.history, prevState.code],
+          }));
         } catch (err) {
           updateState({
             error: `AI response contains invalid JavaScript code: ${err.message}. Try refining the prompt.`,
@@ -206,6 +212,28 @@ const MainComponent = React.memo(
         });
       }
     }, [state.aiPrompt, state.code]);
+
+    const saveCustomPrompt = useCallback(() => {
+      const newPrompts = [...state.customPrompts, state.aiPrompt];
+      localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
+      updateState({ customPrompts: newPrompts });
+    }, [state.aiPrompt, state.customPrompts]);
+
+    const commonPrompts = [
+      "Add a button",
+      "Change color scheme",
+      "Optimize performance",
+    ];
+
+    const undoLastChange = useCallback(() => {
+      if (state.history.length > 0) {
+        const lastCode = state.history[state.history.length - 1];
+        updateState((prevState) => ({
+          code: lastCode,
+          history: prevState.history.slice(0, -1),
+        }));
+      }
+    }, [state.history]);
 
     useEffect(() => {
       if (
@@ -226,13 +254,34 @@ const MainComponent = React.memo(
               onChange={(e) => updateState({ aiPrompt: e.target.value })}
               placeholder="Tell AI how to modify the code..."
               className="w-full p-2 border rounded mb-2"
+              list="common-prompts"
             />
+            <datalist id="common-prompts">
+              {commonPrompts.map((prompt, index) => (
+                <option key={index} value={prompt} />
+              ))}
+              {state.customPrompts.map((prompt, index) => (
+                <option key={index + commonPrompts.length} value={prompt} />
+              ))}
+            </datalist>
             <button
               onClick={updateWithAI}
               disabled={state.isUpdating}
               className="w-full px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:bg-purple-300"
             >
               {state.isUpdating ? "Updating..." : "Update with AI"}
+            </button>
+            <button
+              onClick={saveCustomPrompt}
+              className="w-full px-4 py-2 mt-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Save Prompt
+            </button>
+            <button
+              onClick={undoLastChange}
+              className="w-full px-4 py-2 mt-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+            >
+              Undo Last Change
             </button>
           </div>
           <textarea
