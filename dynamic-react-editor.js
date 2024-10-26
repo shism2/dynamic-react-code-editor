@@ -57,7 +57,13 @@ const MainComponent = React.memo(
       aiPrompt: "",
       isUpdating: false,
       retryCount: 0,
-      customPrompts: JSON.parse(localStorage.getItem("customPrompts")) || [],
+      customPrompts: (() => {
+        try {
+          return JSON.parse(localStorage.getItem("customPrompts")) || [];
+        } catch {
+          return [];
+        }
+      })(),
       history: [],
     });
 
