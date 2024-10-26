@@ -198,7 +198,11 @@ const MainComponent = React.memo(
 
         // Ensure response code is complete before transpiling
         try {
-          new Function(aiResponse); // Validate syntax
+          if (isValidJavaScript(aiResponse)) {
+            new Function(aiResponse); // Validate syntax
+          } else {
+            throw new Error("Invalid JavaScript code");
+          }
           updateState((prevState) => ({
             code: aiResponse.trim(),
             isUpdating: false,
