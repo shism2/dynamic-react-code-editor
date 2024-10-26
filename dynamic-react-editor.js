@@ -261,7 +261,13 @@ const MainComponent = React.memo(
           <div className="mb-4">
             <input
               type="text"
-              onChange={(e) => updateState({ aiPrompt: e.target.value })}
+              const debouncedOnChange = useCallback(debounce((value) => {
+                updateState({ aiPrompt: value });
+              }, 300), []);
+
+              ...
+
+              onChange={(e) => debouncedOnChange(e.target.value)}
               placeholder="Tell AI how to modify the code..."
               className="w-full p-2 border rounded mb-2"
               list="common-prompts"
