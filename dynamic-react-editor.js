@@ -221,6 +221,32 @@ const MainComponent = React.memo(
       }
     }, [state.aiPrompt, state.code]);
 
+    const debouncedOnChange = useCallback(() => {
+      const debouncedFunction = debounce((value) => {
+        updateState({ aiPrompt: value });
+      }, 300);
+      return () => {
+        debouncedFunction.cancel();
+      const saveCustomPrompt = useCallback(() => {
+        if (!state.customPrompts.includes(state.aiPrompt)) {
+          const newPrompts = [...state.customPrompts, state.aiPrompt];
+          localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
+          updateState({ customPrompts: newPrompts });
+        }
+      }, [state.aiPrompt, state.customPrompts]);
+      localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
+      updateState({ customPrompts: newPrompts });
+    }, [state.aiPrompt, state.customPrompts]);
+
+    const isValidJavaScript = (code) => {
+      try {
+        new Function(code);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    };
+
     const commonPrompts = [
       "Add a button",
       "Change color scheme",
@@ -253,7 +279,7 @@ const MainComponent = React.memo(
           <div className="mb-4">
             <input
               type="text"
-              onChange={(e) => updateState({ aiPrompt: e.target.value })}
+              onChange={(e) => debouncedOnChange(e.target.value)}
               placeholder="Tell AI how to modify the code..."
               className="w-full p-2 border rounded mb-2"
               list="common-prompts"
@@ -310,8 +336,10 @@ const MainComponent = React.memo(
                 handleRetry={() => {
                   if (state.retryCount < MAX_RETRIES) {
                     updateState({ retryCount: state.retryCount + 1 });
+                    renderComponent();
+                  } else {
+                    updateState({ retryCount: 0 });
                   }
-                  renderComponent();
                 }}
               />
             ) : (
@@ -363,4 +391,3 @@ const StoryComponent = React.memo(() => (
 
 module.exports = StoryComponent;
 
-export default MainComponent;
