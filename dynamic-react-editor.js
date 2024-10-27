@@ -223,15 +223,24 @@ const MainComponent = React.memo(
       }
     }, [state.aiPrompt, state.code]);
 
-    const updateWithAI = useCallback(async () => {
-      const trimmedPrompt = state.aiPrompt.trim();
-      if (trimmedPrompt.length < 5) {
-        updateState({ error: "Prompt must be at least 5 characters long." });
-        return;
-      }
-      updateState({ isUpdating: true, error: null });
+    const debouncedOnChange = useCallback(debounce((value) => {
+      updateState({ aiPrompt: value });
+    }, 300), []);
+
+    const saveCustomPrompt = useCallback(() => {
+      const newPrompts = [...state.customPrompts, state.aiPrompt];
+      localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
       updateState({ customPrompts: newPrompts });
     }, [state.aiPrompt, state.customPrompts]);
+
+    const isValidJavaScript = (code) => {
+      try {
+        new Function(code);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    };
 
     const commonPrompts = [
       "Add a button",
@@ -265,12 +274,6 @@ const MainComponent = React.memo(
           <div className="mb-4">
             <input
               type="text"
-              const debouncedOnChange = useCallback(debounce((value) => {
-                updateState({ aiPrompt: value });
-              }, 300), []);
-
-              ...
-
               onChange={(e) => debouncedOnChange(e.target.value)}
               placeholder="Tell AI how to modify the code..."
               className="w-full p-2 border rounded mb-2"
@@ -328,9 +331,12 @@ const MainComponent = React.memo(
               <ErrorContent
                 error={state.error}
                 handleRetry={() => {
-                  if (state.retryCount < MAX_RETRIES)
+                  if (state.retryCount < MAX_RETRIES) {
                     updateState({ retryCount: state.retryCount + 1 });
-                  renderComponent();
+                    renderComponent();
+                  } else {
+                    updateState({ retryCount: 0 });
+                  }
                 }}
               />
             ) : (
