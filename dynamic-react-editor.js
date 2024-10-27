@@ -226,15 +226,15 @@ const MainComponent = React.memo(
       }, 300);
       return () => {
         debouncedFunction.cancel();
-      const saveCustomPrompt = useCallback(() => {
-        if (!state.customPrompts.includes(state.aiPrompt)) {
-          const newPrompts = [...state.customPrompts, state.aiPrompt];
-          localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
-          updateState({ customPrompts: newPrompts });
-        }
-      }, [state.aiPrompt, state.customPrompts]);
-      localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
-      updateState({ customPrompts: newPrompts });
+      };
+    }, [updateState]);
+
+    const saveCustomPrompt = useCallback(() => {
+      if (!state.customPrompts.includes(state.aiPrompt)) {
+        const newPrompts = [...state.customPrompts, state.aiPrompt];
+        localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
+        updateState({ customPrompts: newPrompts });
+      }
     }, [state.aiPrompt, state.customPrompts]);
 
     const isValidJavaScript = (code) => {
@@ -389,4 +389,3 @@ const StoryComponent = React.memo(() => (
 ));
 
 module.exports = StoryComponent;
-
