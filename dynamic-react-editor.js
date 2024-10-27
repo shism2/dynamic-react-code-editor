@@ -221,9 +221,14 @@ const MainComponent = React.memo(
       }
     }, [state.aiPrompt, state.code]);
 
-    const debouncedOnChange = useCallback(debounce((value) => {
-      updateState({ aiPrompt: value });
-    }, 300), []);
+    const debouncedOnChange = useCallback(() => {
+      const debouncedFunction = debounce((value) => {
+        updateState({ aiPrompt: value });
+      }, 300);
+      return () => {
+        debouncedFunction.cancel();
+      };
+    }, []);
 
     const saveCustomPrompt = useCallback(() => {
       const newPrompts = [...state.customPrompts, state.aiPrompt];
