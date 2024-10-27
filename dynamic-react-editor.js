@@ -1,3 +1,6 @@
+"use client";
+import React from "react";
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 const SYSTEM_PROMPT = `You are a code assistant. Follow these guidelines when responding:
@@ -44,7 +47,8 @@ module.exports = ComplexComponent;
 
 const MAX_RETRIES = 5;
 const BABEL_CDN_URL =
-  process.env.BABEL_CDN_URL || "https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.1/babel.min.js";
+  process.env.BABEL_CDN_URL ||
+  "https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.1/babel.min.js";
 
 const MainComponent = React.memo(
   ({ code: initialCode, previewProps = {}, noInlineStyles = false }) => {
@@ -151,8 +155,9 @@ const MainComponent = React.memo(
     }, [state.code, previewProps, transpileCode]);
 
     const updateWithAI = useCallback(async () => {
-      if (!state.aiPrompt.trim()) {
-        updateState({ error: "Please enter a prompt for the AI" });
+      const trimmedPrompt = state.aiPrompt.trim();
+      if (trimmedPrompt.length < 5) {
+        updateState({ error: "Prompt must be at least 5 characters long." });
         return;
       }
 
@@ -177,32 +182,27 @@ const MainComponent = React.memo(
           }
         );
 
-        if (!response.ok)
+        if (!response.ok) {
           throw new Error(`AI API responded with status ${response.status}`);
+        }
 
-        // Accumulate streamed response
         const reader = response.body.getReader();
         let aiResponse = "";
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           aiResponse += new TextDecoder().decode(value);
         }
 
-        // Check if the response is HTML by looking for a leading "<"
         if (aiResponse.trim().startsWith("<")) {
           throw new Error(
             "Received HTML instead of JavaScript. There may be a server issue."
           );
         }
 
-        // Ensure response code is complete before transpiling
         try {
-          if (isValidJavaScript(aiResponse)) {
-            new Function(aiResponse); // Validate syntax
-          } else {
-            throw new Error("Invalid JavaScript code");
-          }
+          new Function(aiResponse);
           updateState((prevState) => ({
             code: aiResponse.trim(),
             isUpdating: false,
@@ -222,16 +222,6 @@ const MainComponent = React.memo(
         });
       }
     }, [state.aiPrompt, state.code]);
-
-    const updateWithAI = useCallback(async () => {
-      const trimmedPrompt = state.aiPrompt.trim();
-      if (trimmedPrompt.length < 5) {
-        updateState({ error: "Prompt must be at least 5 characters long." });
-        return;
-      }
-      updateState({ isUpdating: true, error: null });
-      updateState({ customPrompts: newPrompts });
-    }, [state.aiPrompt, state.customPrompts]);
 
     const commonPrompts = [
       "Add a button",
@@ -265,13 +255,7 @@ const MainComponent = React.memo(
           <div className="mb-4">
             <input
               type="text"
-              const debouncedOnChange = useCallback(debounce((value) => {
-                updateState({ aiPrompt: value });
-              }, 300), []);
-
-              ...
-
-              onChange={(e) => debouncedOnChange(e.target.value)}
+              onChange={(e) => updateState({ aiPrompt: e.target.value })}
               placeholder="Tell AI how to modify the code..."
               className="w-full p-2 border rounded mb-2"
               list="common-prompts"
@@ -281,9 +265,10 @@ const MainComponent = React.memo(
                 <option key={index} value={prompt} />
               ))}
               {state.customPrompts.map((prompt, index) => (
-                <option key={index + commonPrompts.length} value={prompt} />
+                <option key={`custom-${index}`} value={prompt} />
               ))}
             </datalist>
+
             <button
               onClick={updateWithAI}
               disabled={state.isUpdating}
@@ -291,12 +276,7 @@ const MainComponent = React.memo(
             >
               {state.isUpdating ? "Updating..." : "Update with AI"}
             </button>
-            <button
-              onClick={saveCustomPrompt}
-              className="w-full px-4 py-2 mt-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Save Prompt
-            </button>
+
             <button
               onClick={undoLastChange}
               className="w-full px-4 py-2 mt-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
@@ -304,12 +284,14 @@ const MainComponent = React.memo(
               Undo Last Change
             </button>
           </div>
+
           <textarea
             value={state.code}
             onChange={(e) => updateState({ code: e.target.value })}
             className="w-full h-[250px] font-mono text-sm p-4 border rounded"
             spellCheck="false"
           />
+
           {state.streamingResponse && (
             <div className="mt-4 p-4 bg-gray-50 rounded border">
               <p className="font-mono text-sm whitespace-pre-wrap">
@@ -328,8 +310,9 @@ const MainComponent = React.memo(
               <ErrorContent
                 error={state.error}
                 handleRetry={() => {
-                  if (state.retryCount < MAX_RETRIES)
+                  if (state.retryCount < MAX_RETRIES) {
                     updateState({ retryCount: state.retryCount + 1 });
+                  }
                   renderComponent();
                 }}
               />
@@ -381,3 +364,5 @@ const StoryComponent = React.memo(() => (
 ));
 
 module.exports = StoryComponent;
+
+export default MainComponent;
