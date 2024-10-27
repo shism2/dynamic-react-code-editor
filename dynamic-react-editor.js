@@ -227,11 +227,13 @@ const MainComponent = React.memo(
       }, 300);
       return () => {
         debouncedFunction.cancel();
-      };
-    }, []);
-
-    const saveCustomPrompt = useCallback(() => {
-      const newPrompts = [...state.customPrompts, state.aiPrompt];
+      const saveCustomPrompt = useCallback(() => {
+        if (!state.customPrompts.includes(state.aiPrompt)) {
+          const newPrompts = [...state.customPrompts, state.aiPrompt];
+          localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
+          updateState({ customPrompts: newPrompts });
+        }
+      }, [state.aiPrompt, state.customPrompts]);
       localStorage.setItem("customPrompts", JSON.stringify(newPrompts));
       updateState({ customPrompts: newPrompts });
     }, [state.aiPrompt, state.customPrompts]);
