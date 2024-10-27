@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 const SYSTEM_PROMPT = `You are a code assistant. Follow these guidelines when responding:
